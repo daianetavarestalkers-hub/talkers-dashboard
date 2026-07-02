@@ -1,0 +1,1648 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Talkers CRO Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0D1117;--surface:#161B22;--surface2:#21262D;
+  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.14);
+  --text:#E6EDF3;--text2:#C9D1D9;--text3:#7D8590;
+  --green:#1D9E75;--green-dim:rgba(29,158,117,0.15);
+  --red:#E24B4A;--red-dim:rgba(226,75,74,0.15);
+  --yellow:#EF9F27;--yellow-dim:rgba(239,159,39,0.15);
+  --blue:#378ADD;--blue-dim:rgba(55,138,221,0.15);
+  --radius:10px;--radius-lg:14px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+
+/* TOPBAR */
+.topbar{display:flex;align-items:center;gap:14px;padding:0 24px;height:56px;background:var(--surface);border-bottom:0.5px solid var(--border);flex-shrink:0;position:sticky;top:0;z-index:100}
+.logo{width:34px;height:34px;background:linear-gradient(135deg,#1D9E75,#0a5a3f);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;color:#fff;flex-shrink:0}
+.topbar-title{font-size:15px;font-weight:600}
+.topbar-sub{font-size:12px;color:var(--text3)}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.live-badge{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--green);background:var(--green-dim);padding:3px 10px;border-radius:20px}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.nav-tabs{display:flex;gap:2px}
+.nav-tab{padding:6px 14px;border-radius:6px;border:none;background:transparent;color:var(--text3);font-size:13px;cursor:pointer;transition:all .15s;font-family:inherit;display:flex;align-items:center;gap:5px}
+.nav-tab:hover{background:var(--surface2);color:var(--text2)}
+.nav-tab.active{background:var(--surface2);color:var(--text);font-weight:500}
+.nav-tab i{font-size:14px}
+
+/* LAYOUT */
+.main{display:flex;flex:1;overflow:hidden}
+.sidebar{width:240px;background:var(--surface);border-right:0.5px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
+.content{flex:1;overflow-y:auto;padding:20px}
+.panel{display:none}
+.panel.active{display:block}
+
+/* SIDEBAR */
+.sidebar-section{padding:12px 12px 4px;font-size:11px;color:var(--text3);font-weight:600;letter-spacing:.05em;text-transform:uppercase}
+.sidebar-btn{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;border:none;background:transparent;color:var(--text3);font-size:13px;cursor:pointer;transition:all .15s;font-family:inherit;width:100%;text-align:left;margin:1px 0}
+.sidebar-btn:hover{background:var(--surface2);color:var(--text2)}
+.sidebar-btn.active{background:var(--green-dim);color:var(--green);font-weight:500}
+.sidebar-btn i{font-size:16px;flex-shrink:0}
+.sidebar-divider{height:0.5px;background:var(--border);margin:8px 12px}
+
+/* CARDS */
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:20px}
+.card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:16px}
+.card-title{font-size:12px;color:var(--text3);font-weight:500;margin-bottom:12px;display:flex;align-items:center;gap:6px;text-transform:uppercase;letter-spacing:.04em}
+.card-title i{font-size:14px}
+
+/* METRIC CARDS */
+.metric{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px}
+.metric-label{font-size:11px;color:var(--text3);font-weight:500;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.metric-value{font-size:28px;font-weight:600;line-height:1;margin-bottom:4px}
+.metric-sub{font-size:12px;color:var(--text3);display:flex;align-items:center;gap:4px}
+.metric-sub.up{color:var(--green)}
+.metric-sub.down{color:var(--red)}
+.metric-sub.warn{color:var(--yellow)}
+
+/* STATUS */
+.status-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.pill-red{background:var(--red-dim);color:var(--red)}
+.pill-yellow{background:var(--yellow-dim);color:var(--yellow)}
+.pill-green{background:var(--green-dim);color:var(--green)}
+.pill-blue{background:var(--blue-dim);color:var(--blue)}
+
+/* PROGRESS */
+.progress-wrap{margin:6px 0}
+.progress-label{display:flex;justify-content:space-between;font-size:12px;color:var(--text3);margin-bottom:5px}
+.progress-label span:last-child{color:var(--text2);font-weight:500}
+.progress-bar{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;transition:width .6s ease}
+.fill-green{background:var(--green)}
+.fill-red{background:var(--red)}
+.fill-yellow{background:var(--yellow)}
+
+/* CLOSER TABLE */
+.closer-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border)}
+.closer-row:last-child{border-bottom:none}
+.closer-avatar{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.closer-name{font-size:13px;font-weight:500;flex:1}
+.closer-mat{font-size:20px;font-weight:600;min-width:30px;text-align:right}
+.closer-bar-wrap{flex:1;max-width:80px}
+.closer-bar{height:4px;background:var(--surface2);border-radius:2px;overflow:hidden}
+.closer-bar-fill{height:100%;border-radius:2px}
+
+/* ALERT */
+.alert{display:flex;gap:10px;padding:12px 14px;border-radius:var(--radius);margin-bottom:12px;font-size:13px}
+.alert i{font-size:16px;flex-shrink:0;margin-top:1px}
+.alert-red{background:var(--red-dim);border-left:3px solid var(--red);color:var(--text2)}
+.alert-red i{color:var(--red)}
+.alert-yellow{background:var(--yellow-dim);border-left:3px solid var(--yellow);color:var(--text2)}
+.alert-yellow i{color:var(--yellow)}
+.alert-green{background:var(--green-dim);border-left:3px solid var(--green);color:var(--text2)}
+.alert-green i{color:var(--green)}
+
+/* ACTION ITEMS */
+.action-item{display:flex;gap:10px;padding:10px 12px;background:var(--surface2);border-radius:var(--radius);margin-bottom:8px}
+.action-num{width:22px;height:22px;border-radius:50%;background:var(--green-dim);color:var(--green);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.action-body .action-title{font-size:13px;font-weight:500;margin-bottom:2px}
+.action-body .action-desc{font-size:12px;color:var(--text3)}
+.action-tag{font-size:11px;padding:1px 7px;border-radius:10px;margin-left:auto;flex-shrink:0;align-self:flex-start;margin-top:2px}
+
+/* CHAT */
+.chat-panel{display:flex;flex-direction:column;height:calc(100vh - 56px)}
+.chat-area{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px}
+.msg{display:flex;gap:9px;animation:fadeUp .2s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.msg.user{flex-direction:row-reverse}
+.msg-avatar{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-top:2px}
+.msg-avatar.a{background:linear-gradient(135deg,#1D9E75,#0a5a3f);color:#fff}
+.msg-avatar.u{background:var(--surface2);color:var(--text3)}
+.msg-bubble{max-width:78%;padding:10px 14px;border-radius:12px;font-size:13.5px;line-height:1.65}
+.msg.a .msg-bubble{background:var(--surface);border:0.5px solid var(--border);border-radius:2px 12px 12px 12px;color:var(--text2)}
+.msg.user .msg-bubble{background:var(--green);color:#fff;border-radius:12px 2px 12px 12px}
+.msg-bubble pre{background:rgba(0,0,0,.3);border-left:2px solid var(--green);border-radius:6px;padding:10px;font-size:12px;font-family:'SF Mono',monospace;white-space:pre-wrap;margin:6px 0;line-height:1.6}
+.dots{display:flex;gap:4px;padding:2px 0}
+.dots span{width:6px;height:6px;background:var(--green);border-radius:50%;animation:blink 1.2s infinite;opacity:.6}
+.dots span:nth-child(2){animation-delay:.2s}
+.dots span:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-5px)}}
+.chat-input-wrap{padding:14px 20px;border-top:0.5px solid var(--border);background:var(--surface);display:flex;gap:8px;align-items:flex-end}
+.chat-input-wrap textarea{flex:1;background:var(--bg);border:0.5px solid var(--border2);border-radius:10px;padding:9px 12px;color:var(--text);font-family:inherit;font-size:13.5px;resize:none;outline:none;min-height:38px;max-height:100px;line-height:1.5;transition:border-color .15s}
+.chat-input-wrap textarea:focus{border-color:rgba(29,158,117,.5)}
+.chat-input-wrap textarea::placeholder{color:var(--text3)}
+.chat-send{width:36px;height:36px;background:var(--green);border:none;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:16px;transition:.15s;flex-shrink:0}
+.chat-send:hover{background:#0F6E56}
+.chat-send:disabled{background:var(--surface2);color:var(--text3);cursor:not-allowed}
+.quick-btns{display:flex;gap:6px;padding:0 20px 10px;flex-wrap:wrap}
+.quick-btn{padding:5px 11px;border-radius:20px;border:0.5px solid var(--border2);background:transparent;color:var(--text3);font-size:12px;cursor:pointer;transition:.15s;font-family:inherit;white-space:nowrap}
+.quick-btn:hover{background:var(--green-dim);border-color:rgba(29,158,117,.4);color:var(--green)}
+
+/* CHART containers */
+.chart-wrap{position:relative;height:200px}
+.chart-wrap-lg{position:relative;height:240px}
+
+/* PAGE TITLE */
+.page-title{font-size:18px;font-weight:600;margin-bottom:4px}
+.page-sub{font-size:13px;color:var(--text3);margin-bottom:20px}
+
+/* SECTION LABEL */
+.section-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;margin-top:4px}
+
+/* FORECAST SCENARIOS */
+.scenario-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border)}
+.scenario-row:last-child{border-bottom:none}
+.scenario-icon{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.scenario-name{font-size:13px;flex:1}
+.scenario-val{font-size:16px;font-weight:600;min-width:40px;text-align:right}
+.scenario-pct{font-size:12px;color:var(--text3);min-width:50px;text-align:right}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">T</div>
+  <div>
+    <div class="topbar-title">Talkers CRO</div>
+    <div class="topbar-sub">Painel Comercial 2026.1</div>
+  </div>
+  <div class="topbar-right">
+    <span id="lastSync" style="font-size:11px;color:var(--text3)"></span>
+    <button onclick="loadDados()" title="Atualizar dados" style="background:transparent;border:0.5px solid var(--border2);color:var(--text3);padding:5px 10px;border-radius:6px;cursor:pointer;font-family:inherit;font-size:12px;display:flex;align-items:center;gap:4px"><i class="ti ti-refresh"></i> Atualizar</button>
+    <div class="live-badge"><div class="live-dot"></div>Live</div>
+  </div>
+</div>
+<div id="urlBanner" style="display:none;background:rgba(239,159,39,.08);border-bottom:0.5px solid rgba(239,159,39,.2);padding:8px 24px;align-items:center;gap:10px;font-size:12px;color:var(--yellow)"></div>
+
+<div class="main">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div style="padding:12px">
+      <div class="section-label" style="padding:4px 0 8px">Análises</div>
+      <button class="sidebar-btn active" onclick="showPanel('overview')"><i class="ti ti-layout-dashboard"></i> Visão Geral</button>
+      <button class="sidebar-btn" onclick="showPanel('forecast')"><i class="ti ti-chart-line"></i> Forecast</button>
+      <button class="sidebar-btn" onclick="showPanel('closers')"><i class="ti ti-users"></i> Performance Closers</button>
+      <button class="sidebar-btn" onclick="showPanel('funil')"><i class="ti ti-filter"></i> Funil Comercial</button>
+      <button class="sidebar-btn" onclick="showPanel('plano')"><i class="ti ti-bolt"></i> Plano de Ação</button>
+      <div class="sidebar-divider"></div>
+      <div class="section-label" style="padding:4px 0 8px">Configuração</div>
+      <button class="sidebar-btn" onclick="showPanel('metas')"><i class="ti ti-pencil"></i> Definir Metas</button>
+      <div class="sidebar-divider"></div>
+      <div class="section-label" style="padding:4px 0 8px">Ferramentas</div>
+      <button class="sidebar-btn" onclick="showPanel('simulador')"><i class="ti ti-variable"></i> Simulador</button>
+      <button class="sidebar-btn" onclick="showPanel('chat')"><i class="ti ti-message-circle"></i> CRO Agent IA</button>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content" id="content">
+
+    <!-- ========== OVERVIEW ========== -->
+    <div class="panel active" id="panel-overview">
+      <div class="page-title">Visão Geral · Junho 2026</div>
+      <div class="page-sub">Meta mensal · <span id="progressTempoPct">—</span> do tempo · Status: <span id="statusPill" class="status-pill pill-yellow">Carregando...</span></div>
+
+      <div class="grid-4">
+        <div class="metric">
+          <div class="metric-label">Matrículas</div>
+          <div class="metric-value" id="metricRealizadas" style="color:var(--text)">—</div>
+          <div class="metric-sub warn"><i class="ti ti-arrow-up-right"></i> de <span id="metricMeta">—</span> meta</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Meta</div>
+          <div class="metric-value" id="metricMetaCard" style="color:var(--text)">—</div>
+          <div class="metric-sub down"><i class="ti ti-minus"></i> Faltam <span id="metricGap">—</span></div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Ritmo Atual</div>
+          <div class="metric-value" id="metricRitmo" style="color:var(--red)">—</div>
+          <div class="metric-sub down" id="metricRitmoSub"><i class="ti ti-trending-down"></i> Necessário: —</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Dias Restantes</div>
+          <div class="metric-value" id="metricDias" style="color:var(--yellow)">—</div>
+          <div class="metric-sub warn"><i class="ti ti-clock"></i> do mês</div>
+        </div>
+      </div>
+
+      <div class="alert alert-red">
+        <i class="ti ti-alert-triangle"></i>
+        <div><strong>Gap crítico:</strong> 54 matrículas em 8 dias exigem ritmo 4× maior que o atual. Meta de 90 em junho não é recuperável no ritmo atual. Foco em maximizar julho.</div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title"><i class="ti ti-chart-bar"></i> Matrículas por Mês · 2026</div>
+          <div class="chart-wrap-lg"><canvas id="chartMensal"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title"><i class="ti ti-chart-donut"></i> Distribuição Junho</div>
+          <div style="display:flex;gap:20px;align-items:center;height:240px">
+            <div class="chart-wrap" style="flex:1;height:200px"><canvas id="chartDistrib"></canvas></div>
+            <div style="flex-shrink:0">
+              <div style="margin-bottom:8px">
+                <div style="display:flex;align-items:center;gap:6px;font-size:12px;margin-bottom:3px"><span style="width:10px;height:10px;border-radius:50%;background:#1D9E75;display:inline-block"></span> TKS Time Closers</div>
+                <div style="font-size:20px;font-weight:600">27</div>
+              </div>
+              <div style="margin-bottom:8px">
+                <div style="display:flex;align-items:center;gap:6px;font-size:12px;margin-bottom:3px"><span style="width:10px;height:10px;border-radius:50%;background:#378ADD;display:inline-block"></span> Laura (TKS)</div>
+                <div style="font-size:20px;font-weight:600">3</div>
+              </div>
+              <div>
+                <div style="display:flex;align-items:center;gap:6px;font-size:12px;margin-bottom:3px"><span style="width:10px;height:10px;border-radius:50%;background:#EF9F27;display:inline-block"></span> Presencial</div>
+                <div style="font-size:20px;font-weight:600">6</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title"><i class="ti ti-target"></i> Avanço na Meta</div>
+          <div style="margin-bottom:16px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+              <span style="font-size:13px;color:var(--text3)">Realizado</span>
+              <span style="font-size:24px;font-weight:600" id="progressMetaPct">—</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill fill-yellow" id="progressMeta" style="width:0%"></div></div>
+            <div style="font-size:11px;color:var(--text3);margin-top:4px" id="progressMetaTxt">— de — matrículas</div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+              <span style="font-size:13px;color:var(--text3)">Tempo consumido</span>
+              <span style="font-size:24px;font-weight:600;color:var(--yellow)" id="progressTempoPct2">—</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill fill-yellow" id="progressTempo" style="width:0%"></div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title"><i class="ti ti-users"></i> Closers · Mês Atual</div>
+          <div id="closersListOverview"><div style="color:var(--text3);font-size:13px;padding:8px 0">Aguardando dados...</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== FORECAST ========== -->
+    <div class="panel" id="panel-forecast">
+      <div class="page-title">Forecast de Matrículas</div>
+      <div class="page-sub">Projeção para o restante de junho 2026</div>
+
+      <div class="grid-3">
+        <div class="metric" style="border-color:rgba(226,75,74,.3)">
+          <div class="metric-label">Pessimista (−20%)</div>
+          <div class="metric-value" style="color:var(--red)">38</div>
+          <div class="metric-sub down"><i class="ti ti-trending-down"></i> 42% da meta</div>
+        </div>
+        <div class="metric" style="border-color:rgba(239,159,39,.3)">
+          <div class="metric-label">Provável (ritmo atual)</div>
+          <div class="metric-value" style="color:var(--yellow)">49</div>
+          <div class="metric-sub warn"><i class="ti ti-minus"></i> 54% da meta</div>
+        </div>
+        <div class="metric" style="border-color:rgba(29,158,117,.3)">
+          <div class="metric-label">Otimista (+20%)</div>
+          <div class="metric-value" style="color:var(--green)">43</div>
+          <div class="metric-sub up"><i class="ti ti-trending-up"></i> 48% da meta</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title"><i class="ti ti-chart-line"></i> Projeção de Fechamento</div>
+          <div class="chart-wrap-lg"><canvas id="chartForecast"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title"><i class="ti ti-trending-up"></i> Cenários Detalhados</div>
+          <div style="margin-bottom:16px">
+            <div class="scenario-row">
+              <div class="scenario-icon" style="background:var(--red)"></div>
+              <div class="scenario-name">Pessimista</div>
+              <div class="scenario-val" style="color:var(--red)">38</div>
+              <div class="scenario-pct">42% meta</div>
+            </div>
+            <div class="scenario-row">
+              <div class="scenario-icon" style="background:var(--yellow)"></div>
+              <div class="scenario-name">Provável</div>
+              <div class="scenario-val" style="color:var(--yellow)">42</div>
+              <div class="scenario-pct">47% meta</div>
+            </div>
+            <div class="scenario-row">
+              <div class="scenario-icon" style="background:var(--green)"></div>
+              <div class="scenario-name">Otimista</div>
+              <div class="scenario-val" style="color:var(--green)">49</div>
+              <div class="scenario-pct">54% meta</div>
+            </div>
+            <div class="scenario-row" style="border-top:0.5px solid var(--border);padding-top:10px">
+              <div class="scenario-icon" style="background:var(--text3)"></div>
+              <div class="scenario-name" style="font-weight:500">Meta junho</div>
+              <div class="scenario-val">90</div>
+              <div class="scenario-pct">100%</div>
+            </div>
+          </div>
+          <div class="alert alert-yellow" style="margin:0">
+            <i class="ti ti-info-circle"></i>
+            <div style="font-size:12px">Mesmo no cenário otimista, junho fecha com ~54% da meta. O foco estratégico deve ser julho.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><i class="ti ti-calendar"></i> Histórico Mensal 2026.1</div>
+        <div class="chart-wrap-lg"><canvas id="chartHistorico"></canvas></div>
+      </div>
+    </div>
+
+    <!-- ========== CLOSERS ========== -->
+    <div class="panel" id="panel-closers">
+      <div class="page-title">Performance dos Closers</div>
+      <div class="page-sub">Análise individual · Junho 2026</div>
+
+      <div class="alert alert-red">
+        <i class="ti ti-alert-triangle"></i>
+        <div><strong>Cristiana — 0 matrículas em 22 dias.</strong> Investigar imediatamente: pipeline vazio, problema de atendimento ou disponibilidade.</div>
+      </div>
+
+      <div class="grid-4">
+        <div class="metric">
+          <div class="metric-label" style="color:var(--green)">Time Closers TKS</div>
+          <div class="metric-value" style="color:var(--green)">27</div>
+          <div class="metric-sub up"><i class="ti ti-check"></i> 75% do total</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Laura</div>
+          <div class="metric-value">3</div>
+          <div class="metric-sub warn"><i class="ti ti-minus"></i> 8% do total</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Presencial (3 closers)</div>
+          <div class="metric-value">6</div>
+          <div class="metric-sub warn"><i class="ti ti-minus"></i> 17% do total</div>
+        </div>
+        <div class="metric" style="border-color:rgba(226,75,74,.3)">
+          <div class="metric-label" style="color:var(--red)">Cristiana</div>
+          <div class="metric-value" style="color:var(--red)">0</div>
+          <div class="metric-sub down"><i class="ti ti-x"></i> Sem resultado</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title"><i class="ti ti-chart-bar"></i> Matrículas por Closer</div>
+          <div class="chart-wrap-lg"><canvas id="chartClosers"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title"><i class="ti ti-list"></i> Detalhamento</div>
+          <div class="closer-row" style="padding:10px 0">
+            <div class="closer-avatar" style="background:rgba(29,158,117,.15);color:var(--green);width:36px;height:36px;border-radius:9px;font-size:13px">TC</div>
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:500">Time Closers TKS</div>
+              <div style="font-size:11px;color:var(--text3)">Canal online · principal motor</div>
+            </div>
+            <span class="status-pill pill-green">27 mat</span>
+          </div>
+          <div class="closer-row" style="padding:10px 0">
+            <div class="closer-avatar" style="background:rgba(55,138,221,.15);color:var(--blue);width:36px;height:36px;border-radius:9px;font-size:13px">LA</div>
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:500">Laura</div>
+              <div style="font-size:11px;color:var(--text3)">TKS · VIP e retenção</div>
+            </div>
+            <span class="status-pill pill-yellow">3 mat</span>
+          </div>
+          <div class="closer-row" style="padding:10px 0">
+            <div class="closer-avatar" style="background:rgba(239,159,39,.15);color:var(--yellow);width:36px;height:36px;border-radius:9px;font-size:13px">BR</div>
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:500">Bruna Rafaela</div>
+              <div style="font-size:11px;color:var(--text3)">Presencial · 3 matrículas</div>
+            </div>
+            <span class="status-pill pill-yellow">3 mat</span>
+          </div>
+          <div class="closer-row" style="padding:10px 0">
+            <div class="closer-avatar" style="background:rgba(233,30,99,.15);color:#E91E63;width:36px;height:36px;border-radius:9px;font-size:13px">BG</div>
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:500">Bruna Gonçalves</div>
+              <div style="font-size:11px;color:var(--text3)">Presencial · 2 matrículas</div>
+            </div>
+            <span class="status-pill" style="background:rgba(233,30,99,.15);color:#E91E63">2 mat</span>
+          </div>
+          <div class="closer-row" style="padding:10px 0">
+            <div class="closer-avatar" style="background:rgba(226,75,74,.15);color:var(--red);width:36px;height:36px;border-radius:9px;font-size:13px">CR</div>
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:500">Cristiana</div>
+              <div style="font-size:11px;color:var(--red)">Sem registros em 22 dias</div>
+            </div>
+            <span class="status-pill pill-red">0 mat</span>
+          </div>
+          <div class="closer-row" style="padding:10px 0">
+            <div class="closer-avatar" style="background:rgba(29,158,117,.1);color:var(--green);width:36px;height:36px;border-radius:9px;font-size:13px">JK</div>
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:500">Julia Kunz</div>
+              <div style="font-size:11px;color:var(--text3)">Presencial · 1 matrícula</div>
+            </div>
+            <span class="status-pill pill-green">1 mat</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== FUNIL ========== -->
+    <div class="panel" id="panel-funil">
+      <div class="page-title">Diagnóstico de Funil</div>
+      <div class="page-sub">Estimativa de conversão · Junho 2026</div>
+
+      <div class="alert alert-yellow">
+        <i class="ti ti-info-circle"></i>
+        <div>Dados de leads e propostas não estão nas planilhas atuais. As taxas abaixo são estimativas baseadas no volume de matrículas e benchmarks históricos. Para análise exata, conectar planilha de pipeline.</div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title"><i class="ti ti-filter"></i> Funil Estimado · Junho</div>
+          <div class="chart-wrap-lg"><canvas id="chartFunil"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title"><i class="ti ti-list-check"></i> Taxas de Conversão</div>
+          <div class="progress-wrap">
+            <div class="progress-label"><span>Leads → Atendidos</span><span>~85%</span></div>
+            <div class="progress-bar"><div class="progress-fill fill-green" style="width:85%"></div></div>
+          </div>
+          <div class="progress-wrap" style="margin-top:10px">
+            <div class="progress-label"><span>Atendidos → Qualificados</span><span>~60%</span></div>
+            <div class="progress-bar"><div class="progress-fill fill-green" style="width:60%"></div></div>
+          </div>
+          <div class="progress-wrap" style="margin-top:10px">
+            <div class="progress-label"><span>Qualificados → Proposta</span><span>~70%</span></div>
+            <div class="progress-bar"><div class="progress-fill fill-yellow" style="width:70%"></div></div>
+          </div>
+          <div class="progress-wrap" style="margin-top:10px">
+            <div class="progress-label"><span>Proposta → Aula Exp.</span><span>~55%</span></div>
+            <div class="progress-bar"><div class="progress-fill fill-yellow" style="width:55%"></div></div>
+          </div>
+          <div class="progress-wrap" style="margin-top:10px">
+            <div class="progress-label"><span>Aula Exp. → Matrícula</span><span>~45%</span></div>
+            <div class="progress-bar"><div class="progress-fill fill-red" style="width:45%"></div></div>
+          </div>
+          <div class="alert alert-red" style="margin-top:14px;margin-bottom:0">
+            <i class="ti ti-alert-triangle"></i>
+            <div style="font-size:12px"><strong>Gargalo principal:</strong> Conversão Aula Experimental → Matrícula. Cada ponto percentual de melhoria aqui gera matrículas diretas.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== PLANO ========== -->
+    <div class="panel" id="panel-plano">
+      <div class="page-title">Plano de Ação Urgente</div>
+      <div class="page-sub">8 dias restantes · Gap de 54 matrículas · 🔴 Risco Crítico</div>
+
+      <div class="alert alert-red">
+        <i class="ti ti-bolt"></i>
+        <div><strong>Meta de 90 em junho não é recuperável.</strong> Objetivo real: maximizar os 8 dias restantes e preparar julho para não repetir o cenário.</div>
+      </div>
+
+      <div class="section-label">Prioridade imediata · Próximas 24h</div>
+      <div class="action-item" style="border-left:3px solid var(--red);background:rgba(226,75,74,.08)">
+        <div class="action-num" style="background:rgba(226,75,74,.2);color:var(--red)">!</div>
+        <div class="action-body" style="flex:1">
+          <div class="action-title">Reunião com Cristiana — diagnóstico imediato</div>
+          <div class="action-desc">Zero matrícula em 22 dias não é azar. Entender se é problema de pipeline, atendimento, disponibilidade ou redistribuição de leads.</div>
+        </div>
+        <span class="action-tag status-pill pill-red">Hoje</span>
+      </div>
+      <div class="action-item" style="border-left:3px solid var(--red);background:rgba(226,75,74,.08)">
+        <div class="action-num" style="background:rgba(226,75,74,.2);color:var(--red)">!</div>
+        <div class="action-body" style="flex:1">
+          <div class="action-title">Mapeamento de leads quentes em aberto</div>
+          <div class="action-desc">Cada closer lista leads ativos com proposta enviada que não fecharam. Contato imediato com oferta de urgência "últimas vagas julho".</div>
+        </div>
+        <span class="action-tag status-pill pill-red">Hoje</span>
+      </div>
+
+      <div class="section-label" style="margin-top:16px">Ações de Marketing · Executar hoje</div>
+      <div class="action-item">
+        <div class="action-num">1</div>
+        <div class="action-body" style="flex:1">
+          <div class="action-title">Story/post de urgência — "Últimas vagas julho"</div>
+          <div class="action-desc">Gatilho: escassez de turmas + início em julho. Canal: Instagram + WhatsApp broadcast.</div>
+        </div>
+        <span class="action-tag status-pill pill-yellow">Hoje</span>
+      </div>
+      <div class="action-item">
+        <div class="action-num">2</div>
+        <div class="action-body" style="flex:1">
+          <div class="action-title">Reativar leads frios dos últimos 60 dias</div>
+          <div class="action-desc">"Oi [nome], julho tem turma nova abrindo — posso guardar uma vaga pra você?" — Time Closers TKS + Presencial.</div>
+        </div>
+        <span class="action-tag status-pill pill-yellow">Hoje/amanhã</span>
+      </div>
+      <div class="action-item">
+        <div class="action-num">3</div>
+        <div class="action-body" style="flex:1">
+          <div class="action-title">Campanha de indicação relâmpago</div>
+          <div class="action-desc">Alunos ativos recebem mensagem individual: "Indique um amigo esta semana e ganhe [benefício]." Foco em alunos VIP.</div>
+        </div>
+        <span class="action-tag status-pill pill-blue">2 dias</span>
+      </div>
+
+      <div class="section-label" style="margin-top:16px">Ações Comerciais · 8 dias</div>
+      <div class="action-item">
+        <div class="action-num">4</div>
+        <div class="action-body" style="flex:1">
+          <div class="action-title">TKS Time Closers — manter ritmo e acelerar</div>
+          <div class="action-desc">Já representam 83% das matrículas. Meta: +2 por closer nos próximos 8 dias.</div>
+        </div>
+        <span class="action-tag status-pill pill-green">Contínuo</span>
+      </div>
+      <div class="action-item">
+        <div class="action-num">5</div>
+        <div class="action-body" style="flex:1">
+          <div class="action-title">Laura — dobrar volume TKS</div>
+          <div class="action-desc">3 matrículas em 22 dias está abaixo do potencial. Meta: fechar mais 3–5 até dia 30.</div>
+        </div>
+        <span class="action-tag status-pill pill-yellow">8 dias</span>
+      </div>
+      <div class="action-item">
+        <div class="action-num">6</div>
+        <div class="action-body" style="flex:1">
+          <div class="action-title">Reativação de leads com aula experimental</div>
+          <div class="action-desc">Leads que fizeram aula exp. em maio/junho e não fecharam → proposta "início em julho sem taxa de matrícula".</div>
+        </div>
+        <span class="action-tag status-pill pill-blue">3 dias</span>
+      </div>
+
+      <div class="section-label" style="margin-top:16px">Preparação para Julho</div>
+      <div class="card" style="background:rgba(29,158,117,.06);border-color:rgba(29,158,117,.2)">
+        <div style="font-size:13px;color:var(--text2);line-height:1.8">
+          Antes de julho começar, definir: <strong style="color:var(--text)">meta real de julho</strong> · <strong style="color:var(--text)">volume de leads suficiente</strong> para sustentar a meta · <strong style="color:var(--text)">resolução do caso Cristiana</strong> · <strong style="color:var(--text)">capacidade TKS</strong> precisa de mais closers ou mais leads?
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== METAS ========== -->
+    <div class="panel" id="panel-metas">
+      <div class="page-title">Definir Metas Mensais</div>
+      <div class="page-sub">Configure as metas por vendedor uma vez por mês. Salvas automaticamente no navegador.</div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title"><i class="ti ti-calendar"></i> Mês de Referência</div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <select id="meta-mes" onchange="metasLoad()" style="background:var(--surface2);border:0.5px solid var(--border2);color:var(--text);padding:8px 12px;border-radius:8px;font-family:inherit;font-size:13px;outline:none;cursor:pointer">
+            <option value="2026-01">Janeiro 2026</option>
+            <option value="2026-02">Fevereiro 2026</option>
+            <option value="2026-03">Março 2026</option>
+            <option value="2026-04">Abril 2026</option>
+            <option value="2026-05">Maio 2026</option>
+            <option value="2026-06" selected>Junho 2026</option>
+            <option value="2026-07">Julho 2026</option>
+            <option value="2026-08">Agosto 2026</option>
+            <option value="2026-09">Setembro 2026</option>
+            <option value="2026-10">Outubro 2026</option>
+            <option value="2026-11">Novembro 2026</option>
+            <option value="2026-12">Dezembro 2026</option>
+          </select>
+          <span style="font-size:12px;color:var(--text3)">As metas ficam salvas por mês. Você pode voltar a qualquer mês anterior.</span>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-bottom:16px">
+        <div class="card">
+          <div class="card-title"><i class="ti ti-users"></i> Meta por Vendedor</div>
+          <div id="metas-closers-form"></div>
+          <div style="margin-top:14px;padding-top:12px;border-top:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Total da Equipe</div>
+              <div style="font-size:22px;font-weight:600" id="metas-total-equipe">0</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Meta Geral do Mês</div>
+              <div style="font-size:22px;font-weight:600;color:var(--green)" id="metas-total-geral-display">90</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><i class="ti ti-settings"></i> Meta Geral do Mês</div>
+          <div style="margin-bottom:16px">
+            <div style="font-size:12px;color:var(--text3);margin-bottom:6px">Total de matrículas que a escola precisa fechar no mês</div>
+            <input type="number" id="meta-geral" min="0" max="500" placeholder="Ex: 90" oninput="metasCalc()" style="width:100%;background:var(--surface2);border:0.5px solid var(--border2);color:var(--text);padding:10px 14px;border-radius:8px;font-family:inherit;font-size:18px;font-weight:600;outline:none">
+          </div>
+          <div style="margin-bottom:16px">
+            <div style="font-size:12px;color:var(--text3);margin-bottom:8px">Distribuição da meta</div>
+            <div id="metas-chart-wrap" style="height:160px"><canvas id="chartMetasDist"></canvas></div>
+          </div>
+          <div id="metas-alerta" style="display:none"></div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;align-items:center">
+        <button onclick="metasSave()" style="display:flex;align-items:center;gap:6px;padding:10px 20px;background:var(--green);border:none;color:#fff;border-radius:8px;font-family:inherit;font-size:13px;font-weight:500;cursor:pointer">
+          <i class="ti ti-device-floppy"></i> Salvar Metas
+        </button>
+        <button onclick="metasClear()" style="display:flex;align-items:center;gap:6px;padding:10px 16px;background:transparent;border:0.5px solid var(--border2);color:var(--text3);border-radius:8px;font-family:inherit;font-size:13px;cursor:pointer">
+          <i class="ti ti-trash"></i> Limpar
+        </button>
+        <span id="metas-saved-msg" style="font-size:12px;color:var(--green);display:none"><i class="ti ti-check"></i> Salvo com sucesso!</span>
+      </div>
+
+      <div class="card" style="margin-top:20px">
+        <div class="card-title"><i class="ti ti-history"></i> Histórico de Metas Salvas</div>
+        <div id="metas-historico" style="font-size:13px;color:var(--text3)">Nenhuma meta salva ainda.</div>
+      </div>
+    </div>
+
+    <!-- ========== SIMULADOR ========== -->
+    <div class="panel" id="panel-simulador">
+      <div class="page-title">Simulador de Cenários</div>
+      <div class="page-sub">Veja o impacto de mudanças no comercial</div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title"><i class="ti ti-sliders"></i> Parâmetros</div>
+          <div style="margin-bottom:14px">
+            <div style="font-size:12px;color:var(--text3);margin-bottom:6px">Matrículas já realizadas</div>
+            <div style="font-size:22px;font-weight:600" id="sim-realizadas">36</div>
+          </div>
+          <div style="margin-bottom:16px">
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text3);margin-bottom:6px">
+              <span>Leads/dia adicionais</span><span id="lbl-leads">0</span>
+            </div>
+            <input type="range" min="0" max="20" value="0" id="sl-leads" oninput="simUpdate()" style="width:100%">
+          </div>
+          <div style="margin-bottom:16px">
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text3);margin-bottom:6px">
+              <span>Taxa de conversão (%)</span><span id="lbl-conv">12</span>
+            </div>
+            <input type="range" min="5" max="40" value="12" step="1" id="sl-conv" oninput="simUpdate()" style="width:100%">
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text3);margin-bottom:6px">
+              <span>Dias restantes no mês</span><span id="lbl-dias">8</span>
+            </div>
+            <input type="range" min="1" max="15" value="8" step="1" id="sl-dias" oninput="simUpdate()" style="width:100%">
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title"><i class="ti ti-chart-bar"></i> Resultado Projetado</div>
+          <div class="grid-2" style="margin-bottom:16px">
+            <div class="metric">
+              <div class="metric-label">Novas mat. projetadas</div>
+              <div class="metric-value" id="sim-novas" style="color:var(--green)">14</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Total no mês</div>
+              <div class="metric-value" id="sim-total" style="color:var(--yellow)">50</div>
+            </div>
+          </div>
+          <div class="progress-wrap" style="margin-bottom:12px">
+            <div class="progress-label"><span>Meta atingida</span><span id="sim-pct">56%</span></div>
+            <div class="progress-bar" style="height:10px"><div class="progress-fill fill-yellow" id="sim-bar" style="width:56%"></div></div>
+          </div>
+          <div class="chart-wrap" style="height:160px"><canvas id="chartSim"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== CHAT ========== -->
+    <div class="panel chat-panel" id="panel-chat">
+      <div class="quick-btns">
+        <button class="quick-btn" onclick="qsend('Radar de meta atualizado')">Radar de Meta</button>
+        <button class="quick-btn" onclick="qsend('Forecast completo para junho')">Forecast</button>
+        <button class="quick-btn" onclick="qsend('Análise individual de cada closer')">Performance Closers</button>
+        <button class="quick-btn" onclick="qsend('Plano de ação para os próximos 8 dias')">Plano de Ação</button>
+        <button class="quick-btn" onclick="qsend('Dashboard executivo completo para a direção')">Dashboard Executivo</button>
+        <button class="quick-btn" onclick="qsend('E se aumentarmos os leads em 30%?')">Simulador</button>
+      </div>
+      <div class="chat-area" id="chatArea">
+        <div class="msg a">
+          <div class="msg-avatar a">T</div>
+          <div class="msg-bubble">
+            <div style="font-weight:500;margin-bottom:6px">CRO Agent ativo · Dados de junho 2026 carregados.</div>
+            <div style="font-size:12.5px;color:var(--text3)">36 matrículas · Meta 90 · Gap 54 · 8 dias restantes. Use os atalhos acima ou pergunte diretamente.</div>
+          </div>
+        </div>
+      </div>
+      <div class="chat-input-wrap">
+        <textarea id="chatInput" placeholder="Pergunte sobre metas, closers, forecast, plano de ação..." rows="1" onkeydown="chatKey(event)" oninput="chatResize(this)"></textarea>
+        <button class="chat-send" id="chatSend" onclick="chatSend()"><i class="ti ti-arrow-up"></i></button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const PANELS = ['overview','forecast','closers','funil','plano','metas','simulador','chat'];
+
+function showPanel(id) {
+  PANELS.forEach(p => {
+    document.getElementById('panel-'+p)?.classList.remove('active');
+  });
+  document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-'+id)?.classList.add('active');
+  event?.currentTarget?.classList.add('active');
+  if (id === 'chat') initChatPanelHeight();
+}
+
+function initChatPanelHeight() {
+  const p = document.getElementById('panel-chat');
+  if (p) p.style.height = (window.innerHeight - 56) + 'px';
+}
+
+Chart.defaults.color = '#7D8590';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+Chart.defaults.font.size = 11;
+
+// ─── CONFIGURAÇÃO DAS URLS ───────────────────────────────────
+// Após implantar os Apps Scripts, cole as URLs aqui:
+const URL_TKS       = localStorage.getItem('talkers_url_tks')  || '';
+const URL_PRESENCIAL = localStorage.getItem('talkers_url_pres') || '';
+// ─────────────────────────────────────────────────────────────
+
+const MONTHS_LABELS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+let chartMensal, chartDistrib, chartForecast, chartHistorico, chartClosers, simChart;
+let DADOS = { tks: null, pres: null };
+let META_ATUAL = 90;
+
+// ── LOADING OVERLAY ──────────────────────────────────────────
+function showLoading(msg) {
+  let el = document.getElementById('loadingOverlay');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'loadingOverlay';
+    el.style.cssText = 'position:fixed;inset:0;background:rgba(13,17,23,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:14px';
+    el.innerHTML = `<div style="width:36px;height:36px;border:3px solid rgba(29,158,117,.3);border-top-color:#1D9E75;border-radius:50%;animation:spin .8s linear infinite"></div><div id="loadingMsg" style="font-size:14px;color:#7D8590"></div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>`;
+    document.body.appendChild(el);
+  }
+  document.getElementById('loadingMsg').textContent = msg || 'Carregando...';
+  el.style.display = 'flex';
+}
+function hideLoading() {
+  const el = document.getElementById('loadingOverlay');
+  if (el) el.style.display = 'none';
+}
+
+// ── URL CONFIG MODAL ─────────────────────────────────────────
+function showUrlConfig() {
+  const urlTks  = localStorage.getItem('talkers_url_tks')  || '';
+  const urlPres = localStorage.getItem('talkers_url_pres') || '';
+  const modal = document.createElement('div');
+  modal.id = 'urlModal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px';
+  modal.innerHTML = `
+    <div style="background:#161B22;border:0.5px solid rgba(255,255,255,.12);border-radius:14px;padding:24px;max-width:540px;width:100%">
+      <div style="font-size:16px;font-weight:600;margin-bottom:4px">Conectar Planilhas</div>
+      <div style="font-size:13px;color:#7D8590;margin-bottom:20px">Cole as URLs geradas pelos Apps Scripts do Google Sheets.</div>
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;color:#7D8590;margin-bottom:6px;font-weight:500">URL — TIME TABLE HOME SCHOOL (TKS)</div>
+        <input id="inp-url-tks" type="text" value="${urlTks}" placeholder="https://script.google.com/macros/s/..."
+          style="width:100%;background:#0D1117;border:0.5px solid rgba(255,255,255,.14);color:#E6EDF3;padding:9px 12px;border-radius:8px;font-size:13px;outline:none;font-family:inherit">
+      </div>
+      <div style="margin-bottom:20px">
+        <div style="font-size:12px;color:#7D8590;margin-bottom:6px;font-weight:500">URL — TIME TABLE PRESENCIAL</div>
+        <input id="inp-url-pres" type="text" value="${urlPres}" placeholder="https://script.google.com/macros/s/..."
+          style="width:100%;background:#0D1117;border:0.5px solid rgba(255,255,255,.14);color:#E6EDF3;padding:9px 12px;border-radius:8px;font-size:13px;outline:none;font-family:inherit">
+      </div>
+      <div style="display:flex;gap:10px">
+        <button onclick="saveUrls()" style="flex:1;padding:10px;background:#1D9E75;border:none;color:#fff;border-radius:8px;font-family:inherit;font-size:13px;font-weight:500;cursor:pointer">Salvar e Conectar</button>
+        <button onclick="document.getElementById('urlModal').remove()" style="padding:10px 16px;background:transparent;border:0.5px solid rgba(255,255,255,.12);color:#7D8590;border-radius:8px;font-family:inherit;font-size:13px;cursor:pointer">Cancelar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+// ── GOOGLE SHEETS — LEITURA VIA CSV PÚBLICO ──────────────────
+const SHEET_TKS_ID   = '1UqSc2mOjAQxibI4OygSbr9D6Fh01fK3s';
+const SHEET_PRES_ID  = '1CbJ5_8_Y8uMocON8QgTcX3JrHz4MB1bF';
+const GID_TKS        = '1544918818';   // aba MATRICULAS NOVAS
+const GID_PRES       = '518345654';    // aba Matrículas
+
+function csvUrl(sheetId, gid) {
+  return `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+}
+
+async function fetchCSV(sheetId, gid) {
+  const url = csvUrl(sheetId, gid);
+  try {
+    const res = await fetch(url, { redirect: 'follow' });
+    if (!res.ok) return null;
+    const text = await res.text();
+    return parseCSV(text);
+  } catch(e) {
+    console.error('Erro CSV:', sheetId, e);
+    return null;
+  }
+}
+
+function parseCSV(text) {
+  // Split em linhas, respeitando aspas
+  const lines = [];
+  let cur = '', inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '"') { inQ = !inQ; }
+    else if (ch === '\n' && !inQ) { lines.push(cur); cur = ''; }
+    else { cur += ch; }
+  }
+  if (cur) lines.push(cur);
+
+  return lines.map(line => {
+    const cols = []; let cell = '', q = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') { q = !q; }
+      else if (c === ',' && !q) { cols.push(cell.trim()); cell = ''; }
+      else { cell += c; }
+    }
+    cols.push(cell.trim());
+    return cols;
+  });
+}
+
+function parseDate(str) {
+  if (!str) return null;
+  // Formatos: DD/MM/YYYY, YYYY-MM-DD, MM/DD/YYYY (Google às vezes exporta assim)
+  str = str.replace(/"/g, '').trim();
+  let m;
+  if ((m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/))) {
+    // Tenta DD/MM/YYYY primeiro
+    const d1 = new Date(m[3], parseInt(m[2])-1, parseInt(m[1]));
+    // Se mês > 12, tenta MM/DD/YYYY
+    if (parseInt(m[1]) > 12) return new Date(m[3], parseInt(m[1])-1, parseInt(m[2]));
+    return d1;
+  }
+  if ((m = str.match(/^(\d{4})-(\d{2})-(\d{2})$/))) {
+    return new Date(parseInt(m[1]), parseInt(m[2])-1, parseInt(m[3]));
+  }
+  const d = new Date(str);
+  return isNaN(d) ? null : d;
+}
+
+function parseSheetTKS(rows) {
+  // Header na linha 0: Contagem | MÊS | DATA | NOME COMPLETO | LIVRO | SEMESTRE ...
+  if (!rows || rows.length < 2) return null;
+  const hoje = new Date();
+  const anoAtual = hoje.getFullYear(), mesAtual = hoje.getMonth() + 1;
+  const porMes = {}, porCloser = {}, detalhesMesAtual = [];
+
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    const num    = String(r[0] || '').trim().toUpperCase();
+    const mesTxt = String(r[1] || '').toUpperCase();
+    const datStr = r[2];
+
+    if (num === 'XX' || num === 'X' || !datStr) continue;
+
+    const dat = parseDate(datStr);
+    if (!dat || isNaN(dat)) continue;
+
+    const ano = dat.getFullYear(), mes = dat.getMonth() + 1;
+    if (ano < 2026) continue;
+
+    const chave = `${ano}-${String(mes).padStart(2,'0')}`;
+    porMes[chave] = (porMes[chave] || 0) + 1;
+
+    const closer = mesTxt.includes('LAURA') ? 'Laura' : 'Time Closers TKS';
+    porCloser[closer] = (porCloser[closer] || 0) + 1;
+
+    if (ano === anoAtual && mes === mesAtual) {
+      detalhesMesAtual.push({
+        num, data: `${String(dat.getDate()).padStart(2,'0')}/${String(mes).padStart(2,'0')}/${ano}`,
+        nome: r[3], livro: r[4], closer
+      });
+    }
+  }
+
+  const mesChave = `${anoAtual}-${String(mesAtual).padStart(2,'0')}`;
+  return {
+    fonte: 'TKS Home School',
+    geradoEm: new Date().toLocaleString('pt-BR'),
+    mesAtual: mesChave,
+    totalMesAtual: detalhesMesAtual.length,
+    porMes, porCloser, detalhesMesAtual
+  };
+}
+
+function parseSheetPres(rows) {
+  // Header: Num | Data | Nome | Livro | Semestre | Horário | Modalidade | Tipo | Sponte | Contrato | Idioma | Closer
+  if (!rows || rows.length < 2) return null;
+  const hoje = new Date();
+  const anoAtual = hoje.getFullYear(), mesAtual = hoje.getMonth() + 1;
+  const porMes = {}, porCloser = {}, detalhesMesAtual = [];
+
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    const num    = String(r[0] || '').trim().toUpperCase();
+    const datStr = r[1];
+    const closer = String(r[11] || '').trim();
+
+    if (num === 'XX' || num === 'X' || !datStr) continue;
+
+    const dat = parseDate(datStr);
+    if (!dat || isNaN(dat)) continue;
+
+    const ano = dat.getFullYear(), mes = dat.getMonth() + 1;
+    if (ano < 2026) continue;
+
+    const chave = `${ano}-${String(mes).padStart(2,'0')}`;
+    porMes[chave] = (porMes[chave] || 0) + 1;
+
+    if (closer) porCloser[closer] = (porCloser[closer] || 0) + 1;
+
+    if (ano === anoAtual && mes === mesAtual) {
+      detalhesMesAtual.push({
+        num, data: `${String(dat.getDate()).padStart(2,'0')}/${String(mes).padStart(2,'0')}/${ano}`,
+        nome: r[2], livro: r[3], closer
+      });
+    }
+  }
+
+  const mesChave = `${anoAtual}-${String(mesAtual).padStart(2,'0')}`;
+  return {
+    fonte: 'Presencial',
+    geradoEm: new Date().toLocaleString('pt-BR'),
+    mesAtual: mesChave,
+    totalMesAtual: detalhesMesAtual.length,
+    porMes, porCloser, detalhesMesAtual
+  };
+}
+
+async function loadDados() {
+  showLoading('Lendo planilhas do Google Drive...');
+  try {
+    const [rowsTks, rowsPres] = await Promise.all([
+      fetchCSV(SHEET_TKS_ID,  GID_TKS),
+      fetchCSV(SHEET_PRES_ID, GID_PRES)
+    ]);
+
+    const tks  = rowsTks  ? parseSheetTKS(rowsTks)   : null;
+    const pres = rowsPres ? parseSheetPres(rowsPres) : null;
+
+    hideLoading();
+
+    if (!tks && !pres) {
+      showUrlBanner('Não foi possível ler as planilhas. Verifique se o compartilhamento está ativo ("Qualquer pessoa com o link").');
+      return;
+    }
+
+    DADOS = { tks, pres };
+    renderCharts(DADOS);
+    updateLastSync();
+    const banner = document.getElementById('urlBanner');
+    if (banner) banner.style.display = 'none';
+
+  } catch(e) {
+    hideLoading();
+    showUrlBanner('Erro ao conectar. Verifique a conexão e tente novamente.');
+    console.error(e);
+  }
+}
+
+function showUrlBanner(msg) {
+  const banner = document.getElementById('urlBanner');
+  if (banner) {
+    banner.style.display = 'flex';
+    banner.innerHTML = `<i class="ti ti-alert-circle"></i>
+      <span>${msg || 'Erro ao ler planilhas.'}</span>
+      <button onclick="loadDados()" style="background:var(--yellow-dim);border:0.5px solid rgba(239,159,39,.3);color:var(--yellow);padding:3px 10px;border-radius:6px;cursor:pointer;font-family:inherit;font-size:12px;margin-left:8px">Tentar novamente</button>`;
+  }
+}
+
+function updateLastSync() {
+  const el = document.getElementById('lastSync');
+  if (el) {
+    const now = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    el.textContent = `Atualizado às ${now}`;
+  }
+}
+
+function saveUrls() {
+  document.getElementById('urlModal')?.remove();
+  loadDados();
+}
+
+
+async function loadDados() {
+  try {
+    const [gvizTks, gvizPres] = await Promise.all([
+      fetchSheet(SHEET_TKS_ID,  SHEET_TKS_ABA),
+      fetchSheet(SHEET_PRES_ID, SHEET_PRES_ABA)
+    ]);
+
+    const tks  = gvizTks  ? parseSheetTKS(gvizTks)   : null;
+    const pres = gvizPres ? parseSheetPres(gvizPres) : null;
+
+    if (!tks && !pres) {
+      hideLoading();
+      showUrlBanner();
+      renderCharts({ tks: null, pres: null });
+      return;
+    }
+
+    DADOS = { tks, pres };
+    hideLoading();
+    renderCharts(DADOS);
+    updateLastSync();
+    // Esconde banner de erro se estava visível
+    const banner = document.getElementById('urlBanner');
+    if (banner) banner.style.display = 'none';
+  } catch(e) {
+    hideLoading();
+    showUrlBanner();
+    console.error('Erro ao carregar dados:', e);
+  }
+}
+
+function showUrlBanner() {
+  const banner = document.getElementById('urlBanner');
+  if (banner) {
+    banner.style.display = 'flex';
+    banner.innerHTML = `<i class="ti ti-alert-circle"></i>
+      <span>Não foi possível ler as planilhas automaticamente. Verifique se o compartilhamento está ativo.</span>
+      <button onclick="loadDados()" style="background:var(--yellow-dim);border:0.5px solid rgba(239,159,39,.3);color:var(--yellow);padding:3px 10px;border-radius:6px;cursor:pointer;font-family:inherit;font-size:12px;margin-left:4px">Tentar novamente</button>`;
+  }
+}
+
+function updateLastSync() {
+  const el = document.getElementById('lastSync');
+  if (el) {
+    const now = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    el.textContent = `Atualizado às ${now}`;
+  }
+}
+
+function saveUrls() {
+  // Mantido por compatibilidade — não usado mais
+  document.getElementById('urlModal')?.remove();
+  loadDados();
+}
+
+// ── PROCESSAR E RENDERIZAR ────────────────────────────────────
+function getMesAtual() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+
+function getMesLabel(chave) {
+  const [,m] = chave.split('-');
+  return MONTHS_LABELS[parseInt(m)-1];
+}
+
+function renderCharts(dados) {
+  const tks  = dados.tks;
+  const pres = dados.pres;
+  const mesAtual = getMesAtual();
+
+  // Coleta todos os meses com dados
+  const todosOsMeses = new Set();
+  if (tks?.porMes)  Object.keys(tks.porMes).forEach(k => todosOsMeses.add(k));
+  if (pres?.porMes) Object.keys(pres.porMes).forEach(k => todosOsMeses.add(k));
+  const mesesOrdenados = Array.from(todosOsMeses).sort();
+  const labels = mesesOrdenados.map(getMesLabel);
+
+  const tksData   = mesesOrdenados.map(m => tks?.porMes?.[m]  || 0);
+  const presData  = mesesOrdenados.map(m => pres?.porMes?.[m] || 0);
+  const totalData = mesesOrdenados.map((_,i) => tksData[i] + presData[i]);
+
+  // Metas salvas
+  const metasSalvas = mesesOrdenados.map(m => {
+    const saved = JSON.parse(localStorage.getItem('talkers_metas_' + m) || 'null');
+    return saved?.geral || null;
+  });
+
+  // Métricas do mês atual
+  const tksAtual  = tks?.totalMesAtual  || 0;
+  const presAtual = pres?.totalMesAtual || 0;
+  const totalAtual = tksAtual + presAtual;
+
+  const metaMes = JSON.parse(localStorage.getItem('talkers_metas_' + mesAtual) || 'null')?.geral || META_ATUAL;
+  const hoje = new Date();
+  const diasNoMes = new Date(hoje.getFullYear(), hoje.getMonth()+1, 0).getDate();
+  const diaAtual = hoje.getDate();
+  const diasRestantes = diasNoMes - diaAtual;
+  const ritmoAtual = diaAtual > 0 ? (totalAtual / diaAtual).toFixed(1) : 0;
+  const ritmoNecessario = diasRestantes > 0 ? ((metaMes - totalAtual) / diasRestantes).toFixed(1) : '—';
+  const pctMeta = Math.round((totalAtual / metaMes) * 100);
+  const pctTempo = Math.round((diaAtual / diasNoMes) * 100);
+
+  // Status
+  const statusEl = document.getElementById('statusPill');
+  let statusClass, statusTxt;
+  if (pctMeta >= pctTempo - 5) { statusClass = 'pill-green'; statusTxt = '🟢 Saudável'; }
+  else if (pctMeta >= pctTempo - 20) { statusClass = 'pill-yellow'; statusTxt = '🟡 Atenção'; }
+  else { statusClass = 'pill-red'; statusTxt = '🔴 Risco Crítico'; }
+  if (statusEl) { statusEl.className = 'status-pill ' + statusClass; statusEl.textContent = statusTxt; }
+
+  // Métricas cards
+  setText('metricRealizadas', totalAtual);
+  setText('metricMeta', metaMes);
+  setText('metricRitmo', ritmoAtual + '/dia');
+  setText('metricDias', diasRestantes);
+  setText('metricRitmoSub', 'Necessário: ' + ritmoNecessario + '/dia');
+  setText('metricGap', metaMes - totalAtual);
+
+  // Progresso
+  setProgress('progressMeta', pctMeta, pctMeta >= 80 ? 'fill-green' : pctMeta >= 50 ? 'fill-yellow' : 'fill-red');
+  setProgress('progressTempo', pctTempo, 'fill-yellow');
+  setText('progressMetaTxt', `${totalAtual} de ${metaMes} matrículas`);
+  setText('progressMetaPct', pctMeta + '%');
+  setText('progressTempoPct', pctTempo + '%');
+
+  // Closers do mês atual
+  const closersTks  = tks?.porCloser  || {};
+  const closersPres = pres?.porCloser || {};
+  const todosClosers = {};
+  Object.entries(closersTks).forEach(([k,v])  => todosClosers[k] = (todosClosers[k]||0) + v);
+  Object.entries(closersPres).forEach(([k,v]) => todosClosers[k] = (todosClosers[k]||0) + v);
+  renderClosersList(todosClosers, totalAtual);
+
+  // ── GRÁFICOS ──────────────────────────────────────────────
+
+  // Mensal empilhado
+  if (chartMensal) {
+    chartMensal.data.labels = labels;
+    chartMensal.data.datasets[0].data = tksData;
+    chartMensal.data.datasets[1].data = presData;
+    chartMensal.data.datasets[2].data = metasSalvas;
+    chartMensal.update();
+  } else {
+    chartMensal = new Chart(document.getElementById('chartMensal'), {
+      type: 'bar',
+      data: { labels, datasets: [
+        { label: 'TKS', data: tksData, backgroundColor: 'rgba(29,158,117,0.7)', borderRadius: 4, stack: 'a' },
+        { label: 'Presencial', data: presData, backgroundColor: 'rgba(55,138,221,0.5)', borderRadius: 4, stack: 'a' },
+        { label: 'Meta', data: metasSalvas, type: 'line', borderColor: 'rgba(239,159,39,0.7)', backgroundColor: 'transparent', borderDash: [4,3], borderWidth: 1.5, pointRadius: 3, tension: 0 }
+      ]},
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, labels: { boxWidth: 10, padding: 12, color: '#7D8590' } } }, scales: { x: { grid: { display: false }, stacked: true }, y: { stacked: true, grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true } } }
+    });
+  }
+
+  // Distribuição donut
+  const distLabels = Object.keys(todosClosers);
+  const distVals   = Object.values(todosClosers);
+  const distColors = distLabels.map((_,i) => ['rgba(29,158,117,0.8)','rgba(55,138,221,0.7)','rgba(239,159,39,0.7)','rgba(233,30,99,0.7)','rgba(155,89,182,0.7)'][i % 5]);
+  if (chartDistrib) {
+    chartDistrib.data.labels = distLabels;
+    chartDistrib.data.datasets[0].data = distVals;
+    chartDistrib.data.datasets[0].backgroundColor = distColors;
+    chartDistrib.update();
+  } else {
+    chartDistrib = new Chart(document.getElementById('chartDistrib'), {
+      type: 'doughnut',
+      data: { labels: distLabels, datasets: [{ data: distVals, backgroundColor: distColors, borderWidth: 0 }] },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '68%', plugins: { legend: { display: false } } }
+    });
+  }
+
+  // Forecast
+  const diasPassados = diaAtual;
+  const forecastLabels = [];
+  const realizadoData = [];
+  for (let d = 1; d <= diasNoMes; d++) {
+    forecastLabels.push('Dia ' + d);
+    if (d <= diasPassados) realizadoData.push(Math.round((totalAtual / diasPassados) * d));
+    else realizadoData.push(null);
+  }
+  const ritmoN = parseFloat(ritmoAtual);
+  const otimData   = forecastLabels.map((_,i) => i >= diasPassados - 1 ? Math.round(totalAtual + Math.min(i - diasPassados + 1, 0) * 0 + (i >= diasPassados - 1 ? (i - diasPassados + 1) * ritmoN * 1.2 : 0)) : null);
+  const provavelData = forecastLabels.map((_,i) => i >= diasPassados - 1 ? Math.round(totalAtual + (i - diasPassados + 1) * ritmoN) : null);
+  const pessiData  = forecastLabels.map((_,i) => i >= diasPassados - 1 ? Math.round(totalAtual + (i - diasPassados + 1) * ritmoN * 0.8) : null);
+  const metaLine   = forecastLabels.map(() => metaMes);
+  if (chartForecast) {
+    chartForecast.data.labels = forecastLabels;
+    chartForecast.data.datasets[0].data = realizadoData;
+    chartForecast.data.datasets[1].data = otimData;
+    chartForecast.data.datasets[2].data = provavelData;
+    chartForecast.data.datasets[3].data = pessiData;
+    chartForecast.data.datasets[4].data = metaLine;
+    chartForecast.update();
+  } else {
+    chartForecast = new Chart(document.getElementById('chartForecast'), {
+      type: 'line',
+      data: { labels: forecastLabels, datasets: [
+        { label: 'Realizado', data: realizadoData, borderColor: '#1D9E75', backgroundColor: 'rgba(29,158,117,0.08)', borderWidth: 2, pointRadius: 0, tension: 0.3, fill: true },
+        { label: 'Otimista',  data: otimData,    borderColor: 'rgba(29,158,117,0.5)', borderDash: [4,3], borderWidth: 1.5, pointRadius: 0, tension: 0.3 },
+        { label: 'Provável',  data: provavelData, borderColor: 'rgba(239,159,39,0.7)', borderDash: [4,3], borderWidth: 1.5, pointRadius: 0, tension: 0.3 },
+        { label: 'Pessimista',data: pessiData,   borderColor: 'rgba(226,75,74,0.5)',  borderDash: [4,3], borderWidth: 1.5, pointRadius: 0, tension: 0.3 },
+        { label: 'Meta',      data: metaLine,    borderColor: 'rgba(255,255,255,0.15)', borderDash: [6,4], borderWidth: 1, pointRadius: 0 }
+      ]},
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, labels: { boxWidth: 10, padding: 10, color: '#7D8590' } } }, scales: { x: { grid: { display: false }, ticks: { maxTicksLimit: 8 } }, y: { grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true } } }
+    });
+  }
+
+  // Histórico
+  if (chartHistorico) {
+    chartHistorico.data.labels = labels;
+    chartHistorico.data.datasets[0].data = totalData;
+    chartHistorico.data.datasets[0].backgroundColor = totalData.map((_,i) => mesesOrdenados[i] < mesAtual ? 'rgba(29,158,117,0.6)' : mesesOrdenados[i] === mesAtual ? 'rgba(239,159,39,0.6)' : 'rgba(55,138,221,0.3)');
+    chartHistorico.data.datasets[1].data = metasSalvas;
+    chartHistorico.update();
+  } else {
+    chartHistorico = new Chart(document.getElementById('chartHistorico'), {
+      type: 'bar',
+      data: { labels, datasets: [
+        { label: 'Total', data: totalData, backgroundColor: totalData.map((_,i) => mesesOrdenados[i] < mesAtual ? 'rgba(29,158,117,0.6)' : 'rgba(239,159,39,0.6)'), borderRadius: 5 },
+        { label: 'Meta', data: metasSalvas, type: 'line', borderColor: 'rgba(239,159,39,0.6)', backgroundColor: 'transparent', borderDash: [4,3], borderWidth: 1.5, pointRadius: 3, tension: 0 }
+      ]},
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, labels: { boxWidth: 10, padding: 12, color: '#7D8590' } } }, scales: { x: { grid: { display: false } }, y: { grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true } } }
+    });
+  }
+
+  // Closers chart
+  const cLabels = Object.keys(todosClosers).map(n => n.split(' ')[0]);
+  const cVals   = Object.values(todosClosers);
+  const cColors = cLabels.map((_,i) => ['rgba(29,158,117,0.7)','rgba(55,138,221,0.6)','rgba(239,159,39,0.6)','rgba(233,30,99,0.6)','rgba(155,89,182,0.6)','rgba(226,75,74,0.6)'][i % 6]);
+  if (chartClosers) {
+    chartClosers.data.labels = cLabels;
+    chartClosers.data.datasets[0].data = cVals;
+    chartClosers.data.datasets[0].backgroundColor = cColors;
+    chartClosers.update();
+  } else {
+    chartClosers = new Chart(document.getElementById('chartClosers'), {
+      type: 'bar',
+      data: { labels: cLabels, datasets: [{ data: cVals, backgroundColor: cColors, borderRadius: 5 }] },
+      options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true }, y: { grid: { display: false } } } }
+    });
+  }
+
+  // Funil — matrículas reais no topo
+  if (!document.getElementById('chartFunil').chart) {
+    new Chart(document.getElementById('chartFunil'), {
+      type: 'bar',
+      data: {
+        labels: ['Matrículas'],
+        datasets: [{ data: [totalAtual], backgroundColor: ['rgba(29,158,117,0.7)'], borderRadius: 5 }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false }, title: { display: true, text: 'Apenas matrículas disponíveis — conecte planilha de pipeline para ver o funil completo', color: '#7D8590', font: { size: 11 } } }, scales: { x: { grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true }, y: { grid: { display: false } } } }
+    });
+  }
+
+  // Simulador
+  if (!simChart) {
+    simChart = new Chart(document.getElementById('chartSim'), {
+      type: 'bar',
+      data: { labels: ['Atual', 'Projetado', 'Meta'], datasets: [{ data: [totalAtual, totalAtual, metaMes], backgroundColor: ['rgba(55,138,221,0.6)','rgba(239,159,39,0.6)','rgba(29,158,117,0.4)'], borderRadius: 5 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true } } }
+    });
+  }
+  document.getElementById('sim-realizadas').textContent = totalAtual;
+
+  // Atualiza system prompt do chat com dados reais
+  updateSystemPrompt(totalAtual, metaMes, diasRestantes, ritmoAtual, ritmoNecessario, todosClosers);
+}
+
+function setText(id, val) {
+  const el = document.getElementById(id); if (el) el.textContent = val;
+}
+function setProgress(id, pct, cls) {
+  const el = document.getElementById(id);
+  if (el) { el.style.width = Math.min(pct,100) + '%'; el.className = 'progress-fill ' + cls; }
+}
+
+function renderClosersList(closers, total) {
+  const container = document.getElementById('closersListOverview');
+  if (!container) return;
+  container.innerHTML = '';
+  const sorted = Object.entries(closers).sort((a,b) => b[1]-a[1]);
+  const COLORS = ['#1D9E75','#378ADD','#EF9F27','#E91E63','#9B59B6','#E67E22'];
+  sorted.forEach(([nome, mat], i) => {
+    const pct = total > 0 ? Math.round((mat/total)*100) : 0;
+    const color = COLORS[i % COLORS.length];
+    const initials = nome.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+    container.innerHTML += `
+      <div class="closer-row">
+        <div class="closer-avatar" style="background:${color}22;color:${color}">${initials}</div>
+        <div style="flex:1"><div class="closer-name">${nome}</div></div>
+        <div class="closer-bar-wrap"><div class="closer-bar"><div class="closer-bar-fill" style="width:${pct}%;background:${color}"></div></div></div>
+        <div class="closer-mat" style="color:${color}">${mat}</div>
+      </div>`;
+  });
+}
+
+let SYSTEM_DYNAMIC = '';
+function updateSystemPrompt(total, meta, diasRest, ritmo, ritmoNec, closers) {
+  const closerStr = Object.entries(closers).map(([k,v])=>`${k}: ${v}`).join(' | ');
+  SYSTEM_DYNAMIC = `Você é o CRO Agent da Talkers Idiomas. Responde à Daiane, gestora.
+
+DADOS REAIS (buscados agora das planilhas):
+- Meta: ${meta} | Realizadas: ${total} | Gap: ${meta-total} | Dias restantes: ${diasRest}
+- Ritmo atual: ${ritmo}/dia | Necessário: ${ritmoNec}/dia
+- Closers: ${closerStr}
+- Planilhas: TKS (ID: 1UqSc2mOjAQxibI4OygSbr9D6Fh01fK3s) | Presencial (ID: 1CbJ5_8_Y8uMocON8QgTcX3JrHz4MB1bF)
+
+REGRAS: use dados reais, linguagem direta, máximo 350 palavras, termine com 1 ação prioritária. Use 🟢🟡🔴 para status. Português brasileiro.`;
+}
+
+function simUpdate() {
+  const leads = parseInt(document.getElementById('sl-leads').value);
+  const conv  = parseInt(document.getElementById('sl-conv').value);
+  const dias  = parseInt(document.getElementById('sl-dias').value);
+  document.getElementById('lbl-leads').textContent = leads;
+  document.getElementById('lbl-conv').textContent = conv;
+  document.getElementById('lbl-dias').textContent = dias;
+  const atual = parseInt(document.getElementById('sim-realizadas').textContent) || 0;
+  const meta  = META_ATUAL;
+  const novas = Math.round(leads * (conv/100) * dias);
+  const total = atual + novas;
+  const pct   = Math.round((total/meta)*100);
+  document.getElementById('sim-novas').textContent = novas;
+  document.getElementById('sim-total').textContent = total;
+  document.getElementById('sim-pct').textContent = pct + '%';
+  const bar = document.getElementById('sim-bar');
+  bar.style.width = Math.min(pct,100) + '%';
+  bar.className = 'progress-fill ' + (pct>=80?'fill-green':pct>=50?'fill-yellow':'fill-red');
+  if (simChart) { simChart.data.datasets[0].data = [atual, total, meta]; simChart.update(); }
+}
+
+const SYSTEM = `Você é o CRO Agent da Talkers Idiomas. Responde à Daiane, gestora. Use os dados mais recentes disponíveis no dashboard. Linguagem direta, máximo 350 palavras, termine com 1 ação prioritária. Use 🟢🟡🔴 para status. Português brasileiro.`;
+
+const chatHistory = [];
+let chatLoading = false;
+
+function chatResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 100) + 'px'; }
+function chatKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); chatSend(); } }
+function qsend(t) { document.getElementById('chatInput').value = t; chatSend(); }
+
+function addMsg(role, text) {
+  const area = document.getElementById('chatArea');
+  const div = document.createElement('div');
+  div.className = `msg ${role === 'assistant' ? 'a' : 'user'}`;
+  const av = document.createElement('div');
+  av.className = `msg-avatar ${role === 'assistant' ? 'a' : 'u'}`;
+  av.textContent = role === 'assistant' ? 'T' : 'D';
+  const bub = document.createElement('div');
+  bub.className = 'msg-bubble';
+  if (role === 'assistant') {
+    bub.innerHTML = text.replace(/```([\s\S]*?)```/g, '<pre>$1</pre>').replace(/\*\*(.*?)\*\*/g, '<strong style="color:#E6EDF3;font-weight:500">$1</strong>').replace(/\n/g, '<br>');
+  } else {
+    bub.textContent = text;
+  }
+  div.appendChild(av); div.appendChild(bub);
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+  return bub;
+}
+
+function showTyping() {
+  const area = document.getElementById('chatArea');
+  const div = document.createElement('div');
+  div.className = 'msg a'; div.id = 'typing';
+  const av = document.createElement('div'); av.className = 'msg-avatar a'; av.textContent = 'T';
+  const bub = document.createElement('div'); bub.className = 'msg-bubble';
+  bub.innerHTML = '<div class="dots"><span></span><span></span><span></span></div>';
+  div.appendChild(av); div.appendChild(bub);
+  area.appendChild(div); area.scrollTop = area.scrollHeight;
+}
+
+async function chatSend() {
+  if (chatLoading) return;
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = ''; input.style.height = 'auto';
+  chatLoading = true;
+  document.getElementById('chatSend').disabled = true;
+  addMsg('user', text);
+  chatHistory.push({ role: 'user', content: text });
+  showTyping();
+  try {
+    const systemPrompt = SYSTEM_DYNAMIC || SYSTEM;
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1000, system: systemPrompt, messages: chatHistory })
+    });
+    const data = await res.json();
+    document.getElementById('typing')?.remove();
+    const reply = data.content?.[0]?.text || 'Erro ao processar.';
+    chatHistory.push({ role: 'assistant', content: reply });
+    addMsg('assistant', reply);
+  } catch(e) {
+    document.getElementById('typing')?.remove();
+    addMsg('assistant', 'Erro de conexão. Verifique sua internet e tente novamente.');
+  }
+  chatLoading = false;
+  document.getElementById('chatSend').disabled = false;
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  loadDados();
+});
+const CLOSER_COLORS = ['#1D9E75','#378ADD','#EF9F27','#E24B4A','#9B59B6','#E67E22','#1ABC9C','#E91E63','#3498DB','#F39C12'];
+
+const DEFAULT_CLOSERS = [
+  { id: 'daiane',   name: 'Daiane',           color: '#9B59B6', realizado: 0 },
+  { id: 'tks',      name: 'Time Closers TKS', color: '#1D9E75', realizado: 27 },
+  { id: 'laura',    name: 'Laura',            color: '#378ADD', realizado: 3 },
+  { id: 'bruna_r',  name: 'Bruna Rafaela',    color: '#EF9F27', realizado: 3 },
+  { id: 'bruna_g',  name: 'Bruna Gonçalves',  color: '#E91E63', realizado: 2 },
+  { id: 'julia',    name: 'Julia Kunz',       color: '#1D9E75', realizado: 1 },
+  { id: 'cristiana',name: 'Cristiana',        color: '#E24B4A', realizado: 0 },
+];
+
+function getTeam() {
+  try {
+    const s = localStorage.getItem('talkers_team');
+    return s ? JSON.parse(s) : JSON.parse(JSON.stringify(DEFAULT_CLOSERS));
+  } catch { return JSON.parse(JSON.stringify(DEFAULT_CLOSERS)); }
+}
+
+function saveTeam(team) {
+  localStorage.setItem('talkers_team', JSON.stringify(team));
+}
+
+let metasChartInst = null;
+
+function metasRenderForm() {
+  const mes = document.getElementById('meta-mes').value;
+  const saved = metasGetSaved(mes);
+  const team = getTeam();
+  const form = document.getElementById('metas-closers-form');
+  form.innerHTML = '';
+
+  team.forEach((c, idx) => {
+    const val = saved?.closers?.[c.id] ?? '';
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:0.5px solid var(--border)';
+    row.id = 'closer-row-' + c.id;
+    row.innerHTML = `
+      <div style="width:9px;height:9px;border-radius:50%;background:${c.color};flex-shrink:0"></div>
+      <div style="flex:1;font-size:13px;font-weight:500">${c.name}</div>
+      <div style="font-size:11px;color:var(--text3);min-width:56px;text-align:right">
+        <span style="color:var(--text2)">${c.realizado}</span> real.
+      </div>
+      <input type="number" min="0" max="500" placeholder="Meta" value="${val}"
+        id="meta-closer-${c.id}" oninput="metasCalc()"
+        style="width:68px;background:var(--surface2);border:0.5px solid var(--border2);color:var(--text);padding:5px 8px;border-radius:7px;font-family:inherit;font-size:13px;font-weight:600;outline:none;text-align:center">
+      <button onclick="editCloser('${c.id}')" title="Editar nome"
+        style="background:transparent;border:none;color:var(--text3);cursor:pointer;padding:4px;border-radius:5px;font-size:14px;display:flex;align-items:center">
+        <i class="ti ti-pencil"></i>
+      </button>
+      <button onclick="removeCloser('${c.id}')" title="Remover"
+        style="background:transparent;border:none;color:var(--red);cursor:pointer;padding:4px;border-radius:5px;font-size:14px;display:flex;align-items:center;opacity:0.6">
+        <i class="ti ti-trash"></i>
+      </button>
+    `;
+    form.appendChild(row);
+  });
+
+  const addRow = document.createElement('div');
+  addRow.style.cssText = 'padding:10px 0 4px';
+  addRow.innerHTML = `
+    <div style="display:flex;gap:8px;align-items:center">
+      <input type="text" id="new-closer-name" placeholder="Nome do novo vendedor..."
+        style="flex:1;background:var(--surface2);border:0.5px solid var(--border2);color:var(--text);padding:7px 12px;border-radius:8px;font-family:inherit;font-size:13px;outline:none"
+        onkeydown="if(event.key==='Enter')addCloser()">
+      <button onclick="addCloser()"
+        style="display:flex;align-items:center;gap:5px;padding:7px 14px;background:var(--green-dim);border:0.5px solid rgba(29,158,117,.3);color:var(--green);border-radius:8px;font-family:inherit;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap">
+        <i class="ti ti-plus"></i> Adicionar
+      </button>
+    </div>
+  `;
+  form.appendChild(addRow);
+
+  document.getElementById('meta-geral').value = saved?.geral ?? '';
+  metasCalc();
+}
+
+function addCloser() {
+  const input = document.getElementById('new-closer-name');
+  const name = input.value.trim();
+  if (!name) return;
+  const team = getTeam();
+  const id = 'c_' + Date.now();
+  const color = CLOSER_COLORS[team.length % CLOSER_COLORS.length];
+  team.push({ id, name, color, realizado: 0 });
+  saveTeam(team);
+  input.value = '';
+  metasRenderForm();
+}
+
+function removeCloser(id) {
+  const team = getTeam();
+  const person = team.find(c => c.id === id);
+  if (!person) return;
+  if (!confirm(`Remover "${person.name}" da equipe?\n\nAs metas já salvas com esta pessoa serão mantidas no histórico, mas ela não aparecerá mais nas novas atribuições.`)) return;
+  saveTeam(team.filter(c => c.id !== id));
+  metasRenderForm();
+}
+
+function editCloser(id) {
+  const team = getTeam();
+  const person = team.find(c => c.id === id);
+  if (!person) return;
+  const novoNome = prompt('Editar nome:', person.name);
+  if (!novoNome || novoNome.trim() === person.name) return;
+  person.name = novoNome.trim();
+  saveTeam(team);
+  metasRenderForm();
+}
+
+function metasCalc() {
+  const team = getTeam();
+  let total = 0;
+  team.forEach(c => {
+    const v = parseInt(document.getElementById('meta-closer-'+c.id)?.value) || 0;
+    total += v;
+  });
+  document.getElementById('metas-total-equipe').textContent = total;
+  const geral = parseInt(document.getElementById('meta-geral').value) || 0;
+  document.getElementById('metas-total-geral-display').textContent = geral || '—';
+
+  const alerta = document.getElementById('metas-alerta');
+  if (geral > 0 && total !== geral) {
+    const diff = total - geral;
+    alerta.style.display = 'flex';
+    alerta.className = diff > 0 ? 'alert alert-yellow' : 'alert alert-red';
+    alerta.innerHTML = `<i class="ti ti-info-circle"></i><div style="font-size:12px">Soma dos vendedores (${total}) ${diff > 0 ? 'excede' : 'está abaixo da'} meta geral (${geral}) em ${Math.abs(diff)} matrícula${Math.abs(diff)!==1?'s':''}.</div>`;
+  } else {
+    alerta.style.display = 'none';
+  }
+
+  const labels = team.map(c => c.name.split(' ')[0]);
+  const vals = team.map(c => parseInt(document.getElementById('meta-closer-'+c.id)?.value) || 0);
+  const colors = team.map(c => c.color + 'CC');
+
+  if (metasChartInst) {
+    metasChartInst.data.labels = labels;
+    metasChartInst.data.datasets[0].data = vals;
+    metasChartInst.data.datasets[0].backgroundColor = colors;
+    metasChartInst.update();
+  } else {
+    const ctx = document.getElementById('chartMetasDist');
+    if (ctx) {
+      metasChartInst = new Chart(ctx, {
+        type: 'doughnut',
+        data: { labels, datasets: [{ data: vals, backgroundColor: colors, borderWidth: 0 }] },
+        options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { display: true, position: 'right', labels: { boxWidth: 8, padding: 8, color: '#7D8590', font: { size: 11 } } } } }
+      });
+    }
+  }
+}
+
+function metasGetSaved(mes) {
+  try { return JSON.parse(localStorage.getItem('talkers_metas_' + mes)); } catch { return null; }
+}
+
+function metasSave() {
+  const mes = document.getElementById('meta-mes').value;
+  const geral = parseInt(document.getElementById('meta-geral').value) || 0;
+  const team = getTeam();
+  const closers = {};
+  team.forEach(c => { closers[c.id] = parseInt(document.getElementById('meta-closer-'+c.id)?.value) || 0; });
+  const data = { mes, geral, closers, teamSnapshot: team.map(c=>({id:c.id,name:c.name})), savedAt: new Date().toISOString() };
+  localStorage.setItem('talkers_metas_' + mes, JSON.stringify(data));
+  const msg = document.getElementById('metas-saved-msg');
+  msg.style.display = 'inline-flex';
+  setTimeout(() => msg.style.display = 'none', 3000);
+  metasRenderHistorico();
+}
+
+function metasClear() {
+  const mes = document.getElementById('meta-mes').value;
+  if (confirm('Limpar as metas de ' + mes + '?')) {
+    localStorage.removeItem('talkers_metas_' + mes);
+    metasRenderForm();
+    metasRenderHistorico();
+  }
+}
+
+function metasLoad() { metasRenderForm(); metasRenderHistorico(); }
+
+const MES_LABELS = { '01':'Janeiro','02':'Fevereiro','03':'Março','04':'Abril','05':'Maio','06':'Junho','07':'Julho','08':'Agosto','09':'Setembro','10':'Outubro','11':'Novembro','12':'Dezembro' };
+
+function metasRenderHistorico() {
+  const el = document.getElementById('metas-historico');
+  const entries = [];
+  for (let i = 1; i <= 12; i++) {
+    const key = `2026-${String(i).padStart(2,'0')}`;
+    const d = metasGetSaved(key);
+    if (d) entries.push(d);
+  }
+  if (!entries.length) { el.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:8px 0">Nenhuma meta salva ainda.</div>'; return; }
+  el.innerHTML = entries.map(d => {
+    const [,m] = d.mes.split('-');
+    const soma = Object.values(d.closers).reduce((a,b)=>a+b,0);
+    const snap = d.teamSnapshot || getTeam();
+    const closersList = snap.map(c => `<span style="font-size:11px;color:var(--text3)">${c.name.split(' ')[0]}: <strong style="color:var(--text2)">${d.closers[c.id]||0}</strong></span>`).join(' · ');
+    return `<div style="display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:0.5px solid var(--border)">
+      <div style="background:var(--green-dim);color:var(--green);font-size:11px;font-weight:600;padding:3px 10px;border-radius:10px;flex-shrink:0;white-space:nowrap">${MES_LABELS[m]}</div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:500;margin-bottom:3px">Meta geral: ${d.geral} · Soma: ${soma}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">${closersList}</div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);flex-shrink:0">${new Date(d.savedAt).toLocaleDateString('pt-BR')}</div>
+    </div>`;
+  }).join('');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  metasRenderForm();
+  metasRenderHistorico();
+});
+</script>
+</body>
+</html>
