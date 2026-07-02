@@ -814,17 +814,11 @@ function showUrlConfig() {
 }
 
 // ── GOOGLE SHEETS — LEITURA VIA CSV PÚBLICO ──────────────────
-const SHEET_TKS_ID   = '1UqSc2mOjAQxibI4OygSbr9D6Fh01fK3s';
-const SHEET_PRES_ID  = '1CbJ5_8_Y8uMocON8QgTcX3JrHz4MB1bF';
-const GID_TKS        = '1544918818';   // aba MATRICULAS NOVAS
-const GID_PRES       = '518345654';    // aba Matrículas
+// URLs publicadas via "Publicar na web" do Google Sheets — sem bloqueio CORS
+const CSV_TKS  = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTeL0WTSQza6PJF3qG68riob_fHHvggDoly26BdW-o-jr5OL0AJIlLyMcmSi4SBlw/pub?gid=1544918818&single=true&output=csv';
+const CSV_PRES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRB4AgImvXsC-E8zJ7B28W6aZZ7Epezcv-hN2y-aRjKKADlmcXx10d6lgodnAYgDQ/pub?gid=518345654&single=true&output=csv';
 
-function csvUrl(sheetId, gid) {
-  return `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
-}
-
-async function fetchCSV(sheetId, gid) {
-  const url = csvUrl(sheetId, gid);
+async function fetchCSV(url) {
   try {
     const res = await fetch(url, { redirect: 'follow' });
     if (!res.ok) return null;
@@ -973,8 +967,8 @@ async function loadDados() {
   showLoading('Lendo planilhas do Google Drive...');
   try {
     const [rowsTks, rowsPres] = await Promise.all([
-      fetchCSV(SHEET_TKS_ID,  GID_TKS),
-      fetchCSV(SHEET_PRES_ID, GID_PRES)
+      fetchCSV(CSV_TKS),
+      fetchCSV(CSV_PRES)
     ]);
 
     const tks  = rowsTks  ? parseSheetTKS(rowsTks)   : null;
